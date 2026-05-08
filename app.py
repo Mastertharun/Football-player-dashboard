@@ -172,31 +172,62 @@ LEAGUE_ACC = {
     'Serie A':'#008fd7','Ligue 1':'#d5283a',
 }
 
-
 def download_kaggle_data():
-    if os.path.exists('data/players.csv'):
+    required_files = [
+        'data/players.csv',
+        'data/appearances.csv', 
+        'data/player_valuations.csv',
+        'data/transfers.csv',
+        'data/clubs.csv',
+        'data/competitions.csv',
+    ]
+    
+    # Check if all required files already exist
+    if all(os.path.exists(f) for f in required_files):
         return
 
     try:
-        # Streamlit Cloud — from secrets
         os.environ['KAGGLE_USERNAME'] = st.secrets['kaggle']['username']
         os.environ['KAGGLE_KEY']      = st.secrets['kaggle']['key']
     except Exception:
-        # Local — reads from C:\Users\tharu\.kaggle\kaggle.json
         pass
 
     try:
         import kaggle
         os.makedirs('data', exist_ok=True)
-        with st.spinner('📥 Downloading dataset from Kaggle...'):
-            kaggle.api.authenticate()
-            kaggle.api.dataset_download_files(
-                'davidcariboo/player-scores',
-                path='data/',
-                unzip=True
-            )
-        st.success('✅ Dataset ready!')
+        kaggle.api.authenticate()
+
+        # Download only the 6 files you need, not the whole dataset
+        files_to_download = [
+            'players.csv',
+            'appearances.csv',
+            'player_valuations.csv',
+            'transfers.csv',
+            'clubs.csv',
+            'competitions.csv',
+        ]
+
+        for filename in files_to_download:
+            if not os.path.exists(f'data/{filename}'):
+                with st.spinner(f'📥 Downloading {filename}...'):
+                    kaggle.api.dataset_download_file(
+                        'davidcariboo/player-scores',
+                        file_name=filename,
+                        path='data/',
+                        force=False
+                    )
+                    # Unzip if downloaded as .zip
+                    zip_path = f'data/{filename}.zip'
+                    if os.path.exists(zip_path):
+                        import zipfile
+                        with zipfile.ZipFile(zip_path, 'r') as z:
+                            z.extractall('data/')
+                        os.remove(zip_path)
+                st.success(f'✅ {filename} ready!')
+
+        st.success('✅ All data downloaded!')
         st.rerun()
+
     except Exception as e:
         st.error(f'❌ Kaggle download failed: {e}')
         st.stop()
