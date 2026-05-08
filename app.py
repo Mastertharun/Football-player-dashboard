@@ -172,6 +172,35 @@ LEAGUE_ACC = {
     'Serie A':'#008fd7','Ligue 1':'#d5283a',
 }
 
+
+def download_kaggle_data():
+    if os.path.exists('data/players.csv'):
+        return
+
+    try:
+        # Streamlit Cloud — from secrets
+        os.environ['KAGGLE_USERNAME'] = st.secrets['kaggle']['username']
+        os.environ['KAGGLE_KEY']      = st.secrets['kaggle']['key']
+    except Exception:
+        # Local — reads from C:\Users\tharu\.kaggle\kaggle.json
+        pass
+
+    try:
+        import kaggle
+        os.makedirs('data', exist_ok=True)
+        with st.spinner('📥 Downloading dataset from Kaggle...'):
+            kaggle.api.authenticate()
+            kaggle.api.dataset_download_files(
+                'davidcariboo/player-scores',
+                path='data/',
+                unzip=True
+            )
+        st.success('✅ Dataset ready!')
+        st.rerun()
+    except Exception as e:
+        st.error(f'❌ Kaggle download failed: {e}')
+        st.stop()
+
 def plt_override(**kwargs):
     """Merge PLT with overrides, handling nested dicts like margin."""
     cfg = PLT.copy()
@@ -183,6 +212,11 @@ def hex_to_rgba(hex_color, alpha=0.15):
     hex_color = hex_color.lstrip('#')
     r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
     return f'rgba({r},{g},{b},{alpha})'
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DOWNLOAD DATA IF MISSING
+# ══════════════════════════════════════════════════════════════════════════════
+download_kaggle_data()  # ← ADD THIS LINE
 
 # ══════════════════════════════════════════════════════════════════════════════
 # DATA LOADING & CLUSTERING
