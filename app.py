@@ -172,65 +172,114 @@ LEAGUE_ACC = {
     'Serie A':'#008fd7','Ligue 1':'#d5283a',
 }
 
+# def download_kaggle_data():
+#     required_files = [
+#         'data/players.csv',
+#         'data/appearances.csv', 
+#         'data/player_valuations.csv',
+#         'data/transfers.csv',
+#         'data/clubs.csv',
+#         'data/competitions.csv',
+#     ]
+    
+#     # Check if all required files already exist
+#     if all(os.path.exists(f) for f in required_files):
+#         return
+
+#     try:
+#         os.environ['KAGGLE_USERNAME'] = st.secrets['kaggle']['username']
+#         os.environ['KAGGLE_KEY']      = st.secrets['kaggle']['key']
+#     except Exception:
+#         pass
+
+#     try:
+#         import kaggle
+#         os.makedirs('data', exist_ok=True)
+#         kaggle.api.authenticate()
+
+#         # Download only the 6 files you need, not the whole dataset
+#         files_to_download = [
+#             'players.csv',
+#             'appearances.csv',
+#             'player_valuations.csv',
+#             'transfers.csv',
+#             'clubs.csv',
+#             'competitions.csv',
+#         ]
+
+#         for filename in files_to_download:
+#             if not os.path.exists(f'data/{filename}'):
+#                 with st.spinner(f'📥 Downloading {filename}...'):
+#                     kaggle.api.dataset_download_file(
+#                         'davidcariboo/player-scores',
+#                         file_name=filename,
+#                         path='data/',
+#                         force=False
+#                     )
+#                     # Unzip if downloaded as .zip
+#                     zip_path = f'data/{filename}.zip'
+#                     if os.path.exists(zip_path):
+#                         import zipfile
+#                         with zipfile.ZipFile(zip_path, 'r') as z:
+#                             z.extractall('data/')
+#                         os.remove(zip_path)
+#                 st.success(f'✅ {filename} ready!')
+
+#         st.success('✅ All data downloaded!')
+#         st.rerun()
+
+#     except Exception as e:
+#         st.error(f'❌ Kaggle download failed: {e}')
+#         st.stop()
+
 def download_kaggle_data():
     required_files = [
         'data/players.csv',
-        'data/appearances.csv', 
+        'data/appearances.csv',
         'data/player_valuations.csv',
         'data/transfers.csv',
         'data/clubs.csv',
         'data/competitions.csv',
     ]
-    
-    # Check if all required files already exist
+
     if all(os.path.exists(f) for f in required_files):
         return
 
-    try:
-        os.environ['KAGGLE_USERNAME'] = st.secrets['kaggle']['username']
-        os.environ['KAGGLE_KEY']      = st.secrets['kaggle']['key']
-    except Exception:
-        pass
+    # Direct download URLs from your GitHub Release
+    # Replace YOUR_USERNAME and YOUR_REPO with your actual values
+    BASE_URL = "https://github.com/Mastertharun/Football-player-dashboard/releases/download/v1.0-data"
+    
+    files = [
+        'players.csv',
+        'appearances.csv',
+        'player_valuations.csv',
+        'transfers.csv',
+        'clubs.csv',
+        'competitions.csv',
+    ]
 
-    try:
-        import kaggle
-        os.makedirs('data', exist_ok=True)
-        kaggle.api.authenticate()
+    import requests
+    os.makedirs('data', exist_ok=True)
 
-        # Download only the 6 files you need, not the whole dataset
-        files_to_download = [
-            'players.csv',
-            'appearances.csv',
-            'player_valuations.csv',
-            'transfers.csv',
-            'clubs.csv',
-            'competitions.csv',
-        ]
+    for filename in files:
+        filepath = f'data/{filename}'
+        if not os.path.exists(filepath):
+            with st.spinner(f'📥 Downloading {filename}...'):
+                try:
+                    url = f'{BASE_URL}/{filename}'
+                    response = requests.get(url, stream=True)
+                    response.raise_for_status()
+                    
+                    with open(filepath, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    st.success(f'✅ {filename} done!')
+                except Exception as e:
+                    st.error(f'❌ Failed to download {filename}: {e}')
+                    st.stop()
 
-        for filename in files_to_download:
-            if not os.path.exists(f'data/{filename}'):
-                with st.spinner(f'📥 Downloading {filename}...'):
-                    kaggle.api.dataset_download_file(
-                        'davidcariboo/player-scores',
-                        file_name=filename,
-                        path='data/',
-                        force=False
-                    )
-                    # Unzip if downloaded as .zip
-                    zip_path = f'data/{filename}.zip'
-                    if os.path.exists(zip_path):
-                        import zipfile
-                        with zipfile.ZipFile(zip_path, 'r') as z:
-                            z.extractall('data/')
-                        os.remove(zip_path)
-                st.success(f'✅ {filename} ready!')
-
-        st.success('✅ All data downloaded!')
-        st.rerun()
-
-    except Exception as e:
-        st.error(f'❌ Kaggle download failed: {e}')
-        st.stop()
+    st.success('✅ All data ready!')
+    st.rerun()
 
 def plt_override(**kwargs):
     """Merge PLT with overrides, handling nested dicts like margin."""
